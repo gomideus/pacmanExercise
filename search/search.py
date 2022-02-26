@@ -54,9 +54,9 @@ class SearchProblem:
 
     def getCostOfActions(self, movimento):
         """
-         movimento: A list of movimento to take
+         movimento: A list of moves to take
 
-        This method returns the total cost of a particular sequence of movimento.
+        This method returns the total cost of a particular sequence of moves.
         The sequence must be composed of legal moves.
         """
         util.raiseNotDefined()
@@ -89,8 +89,7 @@ def depthFirstSearch(problem: SearchProblem):
     "*** YOUR CODE HERE ***"
     
     from util import Stack
-    from game import Directions
-    
+
     start = problem.getStartState()
     sucCoord = start
     visitado = []
@@ -118,46 +117,49 @@ def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
 
-    start = problem.getStartState()
-    visitado = []
-    visitado.append(start)
-    fronteira = util.Queue()
-    tupla = (start, [])
-    fronteira.push(tupla)
-    while not fronteira.isEmpty():
-        estadoAtual, movimento = fronteira.pop()
-        if problem.isGoalState(estadoAtual):
-            return movimento
-        sucessor = problem.getSuccessors(estadoAtual)
-        for i in sucessor:
-            if not i[0] in visitado:
-                direction = i[1]
-                visitado.append(i[0])
-                fronteira.push((i[0], movimento + [direction]))
-    return movimento
+    from util import Queue
+
+    fila = Queue()
+    atual = problem.getStartState()
+    tupla = (atual, [])
+    fila.push(tupla)
+    visited = []
+
+    while not problem.isGoalState(atual):
+
+        atual, movimentos = fila.pop()
+        succ = problem.getSuccessors(atual) # (sucessor, movimento, stepCost)
+        visited.append(atual)
+        for i in succ:
+            if not i[0] in visited:
+                move = i[1]
+                fila.push((i[0], movimentos + [move]))
+
+    return movimentos
     util.raiseNotDefined()
 
 def uniformCostSearch(problem: SearchProblem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
 
-    start = problem.getStartState()
-    visitado = []
-    fronteira = util.PriorityQueue()
-    fronteira.push((start, []) ,0)
-    while not fronteira.isEmpty():
-        estadoAtual, actions = fronteira.pop()
-        if problem.isGoalState(estadoAtual):
-            return actions
-        if estadoAtual not in visitado:
-            successors = problem.getSuccessors(estadoAtual)
-            for succ in successors:
-                if succ[0] not in visitado:
-                    directions = succ[1]
-                    newCost = actions + [directions]
-                    fronteira.push((succ[0], actions + [directions]), problem.getCostOfActions(newCost))
-        visitado.append(estadoAtual)
-    return actions
+    fila = []
+    atual = problem.getStartState()
+    tupla = ([atual], 0, [])
+    fila.append(tupla)
+    visited = []
+
+    while not problem.isGoalState(atual) and fila:
+        nodes, cost, moves = fila.pop(0)
+        atual = nodes[-1]
+        succ = problem.getSuccessors(atual) # (sucessor, movimento, stepCost)
+        visited.append(atual)
+        for i in succ:
+            if not i[0] in visited:
+                move = i[1]
+                fila.append((nodes+[i[0]], cost+i[2], moves + [move]))
+        fila = sorted(fila, key=lambda tup: tup[1])
+    return moves
+
     
     util.raiseNotDefined()
 
@@ -168,30 +170,37 @@ def nullHeuristic(estadoAtual, problem=None):
     """
     return 0
 
+def manhattanHeuristic(estadoAtual, problem=None):
+    return abs( 1 - estadoAtual[0] ) + abs( 1 - estadoAtual[1] )
+
+def euclideanHeuristic(estadoAtual, problem=None):
+    # dAB² = (xB – xA)² + (yB – yA)².
+    import math
+    return math.sqrt( ( (estadoAtual[0] - 1 )**2) + ( (estadoAtual[1] - 1 )**2) )
+
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
 
-    start = problem.getStartState()
-    visitado = []
-    fronteira = util.PriorityQueue()
-    fronteira.push((start, []), nullHeuristic(start, problem))
-    nCost = 0
-    while not fronteira.isEmpty():
-        estadoAtual, actions = fronteira.pop()
-        if problem.isGoalState(estadoAtual):
-            return actions
-        if estadoAtual not in visitado:
-            successors = problem.getSuccessors(estadoAtual)
-            for succ in successors:
-                if succ[0] not in visitado:
-                    directions = succ[1]
-                    nActions = actions + [directions]
-                    nCost = problem.getCostOfActions(nActions) + heuristic(succ[0], problem)
-                    fronteira.push((succ[0], actions + [directions]), nCost)
-        visitado.append(estadoAtual)
-    return actions
-    util.raiseNotDefined()
+    fila = []
+    atual = problem.getStartState()
+    tupla = ([atual], 0, [])
+    fila.append(tupla)
+    visited = []
+
+    while not problem.isGoalState(atual) and fila:
+        nodes, cost, moves = fila.pop(0)
+        atual = nodes[-1]
+        succ = problem.getSuccessors(atual) # (sucessor, movimento, stepCost)
+        visited.append(atual)
+        for i in succ:
+            if not i[0] in visited:
+                move = i[1]
+                custoTotal = cost + i[2] + heuristic(i[0],problem)
+                fila.append((nodes+[i[0]], custoTotal, moves + [move]))
+        fila = sorted(fila, key=lambda tup: tup[1])
+    return moves
+
     
     util.raiseNotDefined()
 
